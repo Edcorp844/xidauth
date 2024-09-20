@@ -13,15 +13,15 @@ SOURCES = $(wildcard $(SRCDIR)/*.cpp)
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SOURCES))
 TARGET = $(BINDIR)/auth_microservice
 
-# Include other build scripts
+# Include other build scripts 
 include buildscripts/dependencies.mk
-include buildscripts/pistache.mk
-include buildscripts/redis-plus-plus.mk
+
+.PHONY: all $(TARGET) $(OBJDIR)/%.o clean clean-dependencies
 
 # Default target
-all: check-pistache check-redis $(TARGET)
+all: all-dependencies $(TARGET)
 
-# Link object files to create the final executable
+# Link object files to create the final executable clean-dependencies
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 
@@ -31,10 +31,10 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 
 # Clean up build artifacts
 clean:
-	sudo rm -rf $(OBJDIR)/*.o $(BINDIR)/auth_microservice
-	sudo rm -rf pistache redis-plus-plus googletest hiredis
+	rm -rf $(OBJDIR)/*.o $(BINDIR)/auth_microservice
+	
 
 # Clean dependencies
-clean-dependencies: clean
-	rm -rf pistache/build redis-plus-plus/build googletest/build hiredis/build
-
+clean-dependencies: 
+	rm -rf dependencies
+	

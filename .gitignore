@@ -1,9 +1,6 @@
 # Ignore build directories
-/bin/
-/obj/
-/pistache/build/
-/redis-plus-plus/build/
-/googletest/build/
+/dependencies/*
+/lib/*
  
 # Ignore compiled binaries
 auth_microservice
