@@ -1,0 +1,20 @@
+# Ignore build directories
+/bin/
+/obj/
+/pistache/build/
+/redis-plus-plus/build/
+/googletest/build/
+ 
+# Ignore compiled binaries
+auth_microservice
+
+# Ignore dependency-related files
+*.o
+*.a
+*.so
+*.out
+
+# Ignore CMake files
+CMakeCache.txt
+CMakeFiles/
+Makefile.cmake
