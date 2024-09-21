@@ -19,6 +19,7 @@
     pkgs.python3
     pkgs.hiredis
     pkgs.gtest
+    pkgs.perl
     pkgs.pkg-config      # For package configuration
   ];
 

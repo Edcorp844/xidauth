@@ -1,17 +1,14 @@
-# Ignore build directories
-/dependencies/*
-/lib/*
- 
-# Ignore compiled binaries
-auth_microservice
+# Ignore installed dependencies
+/deps/
 
-# Ignore dependency-related files
+# Ignore build artifacts
 *.o
-*.a
-*.so
-*.out
+authid
 
-# Ignore CMake files
-CMakeCache.txt
-CMakeFiles/
-Makefile.cmake
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore any other unwanted files
+*.swp
+*.DS_Store

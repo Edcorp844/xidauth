@@ -1,40 +1,22 @@
-# Main Makefile
-
-# Compiler settings
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Iinclude -I/usr/local/include -I/usr/local/include/sw -I/usr/local/include/pistache
-LDFLAGS = -L/usr/local/lib -lssl -lcrypto -lpthread -lredis++ -lpistache
+CXXFLAGS = -std=c++17 -Iinclude -I$(DEPS_DIR)/include -I$(DEPS_DIR)/redis-plus-plus/include -I$(DEPS_DIR)/openssl/include -pthread
+LDFLAGS = -L$(DEPS_DIR)/lib -L$(DEPS_DIR)/openssl/lib -lhiredis -lredis++ -lssl -lcrypto
 
-# Source files and object files
-SRCDIR = src
-OBJDIR = obj
-BINDIR = bin
-SOURCES = $(wildcard $(SRCDIR)/*.cpp)
-OBJECTS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SOURCES))
-TARGET = $(BINDIR)/auth_microservice
+SRCS = $(wildcard src/*.cpp)   # Automatically includes all .cpp files in src/
+OBJS = $(SRCS:.cpp=.o)
+TARGET = authid                # Executable name is now authid
 
-# Include other build scripts 
+.PHONY: all clean
+
 include buildscripts/dependencies.mk
 
-.PHONY: all $(TARGET) $(OBJDIR)/%.o clean clean-dependencies
+all: $(TARGET)
 
-# Default target
-all: all-dependencies $(TARGET)
+# Target to compile the executable
+$(TARGET): $(OBJS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
 
-# Link object files to create the final executable clean-dependencies
-$(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
-
-# Compile each source file into an object file
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Clean up build artifacts
+# Clean target to remove object files and the executable
 clean:
-	rm -rf $(OBJDIR)/*.o $(BINDIR)/auth_microservice
-	
-
-# Clean dependencies
-clean-dependencies: 
-	rm -rf dependencies
-	
+	rm -f $(OBJS) $(TARGET)
+	rm -rf $(DEPS_DIR)
