@@ -1,14 +1,1 @@
-# Ignore installed dependencies
-/deps/
-
-# Ignore build artifacts
-*.o
-authid
-
-# Ignore temporary files
-*.tmp
-*.log
-
-# Ignore any other unwanted files
-*.swp
-*.DS_Store
+/target
