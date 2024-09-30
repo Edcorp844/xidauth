@@ -13,6 +13,7 @@
     pkgs.rustfmt
     pkgs.stdenv.cc
     pkgs.curl
+    pkgs.wget
   ];
 
   # Sets environment variables in the workspace
@@ -20,7 +21,7 @@
     RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
   };
 
-  # Enable Docker
+  # Enable Dockers
   services.docker = {
     enable = true;
   };
@@ -33,27 +34,14 @@
       "serayuzgur.crates"
       "vadimcn.vscode-lldb"
     ];
-
-    # Enable previews
-    previews = {
-      enable = true;
-     
-      
-     };
-    };
-
-    # Workspace lifecycle hooks
     workspace = {
-      # Runs when a workspace is first created
       onCreate = {
         # Open editors for the following files by default, if they exist:
         default.openFiles = [ "src/main.rs" ];
       };
-      # Runs when the workspace is (re)started
-      onStart = {
-        # Example: start a background task to watch and re-build backend code
-        # watch-backend = "npm run watch-backend";
-      };
     };
+    # Enable previews and customize configuration
+    previews = { };
   };
+
 }
