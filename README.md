@@ -35,7 +35,7 @@ The X ID Authentication Service follows a microservices architecture, allowing f
 
 1. Clone the repository:
    ```bash
-   git clone [<repository-url>](https://github.com/Edcorp844/xidauth)
+   git clone https://github.com/Edcorp844/xidauth
    cd xid auth
    bash redish.sh
    cargo test
