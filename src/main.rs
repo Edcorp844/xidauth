@@ -1,10 +1,15 @@
 pub mod db;
+pub mod auth;
+pub mod tests;
 use db::database::DataBase;
 use redis::RedisError;
 
 fn main() -> Result<(), RedisError> {
     // Initialize the database connection (using "redis://127.0.0.1/")
     let mut db = DataBase::new("redis://127.0.0.1:6379")?;
+    
+    let modules = db.check_redis_modules()?;
+    println!("Loaded Redis Modules: {}", modules);
 
     // Set a value in Redis
     db.set_value("username", "rustacean")?;

@@ -1,4 +1,4 @@
-use redis::{Commands, Connection, RedisError};
+use redis::{Commands, Connection, RedisError, RedisResult};
 
 pub struct DataBase {
     connection: Connection,
@@ -12,7 +12,7 @@ impl DataBase {
         Ok(DataBase { connection })
     }
 
-    // Set a value in Redis.
+    // Set a key-value pair in Redis.
     pub fn set_value(&mut self, key: &str, value: &str) -> Result<(), RedisError> {
         let _: () = self.connection.set(key, value)?;
         Ok(())
@@ -40,5 +40,31 @@ impl DataBase {
     pub fn expire_key(&mut self, key: &str, seconds: usize) -> Result<(), RedisError> {
         let _: () = self.connection.expire(key, seconds.try_into().unwrap())?;
         Ok(())
+    }
+
+    // Store JSON data in Redis using RedisJSON
+    pub fn set_json_value(&mut self, key: &str, json_data: &str) -> RedisResult<()> {
+        let _: () = redis::cmd("JSON.SET")
+            .arg(key)
+            .arg(".") // Root path for the JSON
+            .arg(json_data)
+            .query(&mut self.connection)?;
+        Ok(())
+    }
+
+    // Retrieve JSON data from Redis using RedisJSON
+    pub fn get_json_value(&mut self, key: &str) -> RedisResult<String> {
+        let json_data: String = redis::cmd("JSON.GET")
+            .arg(key)
+            .arg(".") // Root path for the JSON
+            .query(&mut self.connection)?;
+        Ok(json_data)
+    }
+
+    // Check which Redis modules are loaded
+    pub fn check_redis_modules(&mut self) -> Result<String, RedisError> {
+        let result: String = redis::cmd("MODULE").arg("LIST").query(&mut self.connection)?;
+
+        Ok(result)
     }
 }
