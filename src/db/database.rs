@@ -1,4 +1,7 @@
 use redis::{Commands, Connection, RedisError, RedisResult};
+use std::collections::HashMap;
+
+use super::db_error::DBError;
 
 pub struct DataBase {
     connection: Connection,
@@ -52,18 +55,25 @@ impl DataBase {
         Ok(())
     }
 
-    // Retrieve JSON data from Redis using RedisJSON
-    pub fn get_json_value(&mut self, key: &str) -> RedisResult<String> {
+    pub fn get_json_value(&mut self, key: &str) -> Result<HashMap<String, String>, DBError> {
         let json_data: String = redis::cmd("JSON.GET")
             .arg(key)
             .arg(".") // Root path for the JSON
-            .query(&mut self.connection)?;
-        Ok(json_data)
+            .query(&mut self.connection)
+            .map_err(DBError::from)?; // Convert RedisError to MyError
+
+        // Deserialize JSON data
+        let user_info: HashMap<String, String> =
+            serde_json::from_str(&json_data).map_err(DBError::from)?; // Convert SerdeError to MyError
+
+        Ok(user_info)
     }
 
     // Check which Redis modules are loaded
     pub fn check_redis_modules(&mut self) -> Result<String, RedisError> {
-        let result: String = redis::cmd("MODULE").arg("LIST").query(&mut self.connection)?;
+        let result: String = redis::cmd("MODULE")
+            .arg("LIST")
+            .query(&mut self.connection)?;
 
         Ok(result)
     }
