@@ -14,6 +14,8 @@
     pkgs.stdenv.cc
     pkgs.curl
     pkgs.wget
+    pkgs.openssl
+    pkgs.pkg-config
   ];
 
   # Sets environment variables in the workspace
