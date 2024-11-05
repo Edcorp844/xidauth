@@ -1,14 +1,15 @@
-mod auth;
+/* mod auth;
 mod db;
 mod o_auth2;
 mod tests;
 
-use actix::{Actor, Addr, Context, Handler};
+use actix::{Actor, Addr, Context, Handler, Message};
 use actix_web::{
     middleware::Logger,
     web::{self, Data},
     App, HttpRequest, HttpServer,
 };
+use auth::auth_service::AuthService;
 use o_auth2::support;
 use oxide_auth::{
     endpoint::{Endpoint, OwnerConsent, OwnerSolicitor, Solicitation},
@@ -21,6 +22,10 @@ use oxide_auth_actix::{
 };
 use oxide_auth_db::primitives::db_registrar::DBRegistrar;
 use std::{env, thread};
+
+use serde::{Deserialize, Serialize};
+use serde_json::to_string;
+use std::collections::HashMap;
 
 static DENY_TEXT: &str = "<html>
 This page should be accessed via an oauth token from the client in the example. Click
@@ -104,7 +109,7 @@ pub async fn main() -> std::io::Result<()> {
     );
     std::env::set_var("REDIS_URL", "redis://127.0.0.1:6379");
     std::env::set_var("MAX_POOL_SIZE", "32");
-
+    /*  */
     std::env::set_var("CLIENT_PREFIX", "client:");
 
     env_logger::init();
@@ -234,4 +239,34 @@ where
             _ => op.run(&mut self.endpoint),
         }
     }
+}
+ */
+
+mod auth;
+mod db;
+mod o_auth2;
+mod tests;
+
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use auth::endpoints;
+use auth::{auth_service::AuthService, endpoints::authenticate, endpoints::register};
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let auth_service = web::Data::new(Mutex::new(
+        AuthService::new("redis://127.0.0.1:6379").expect("Failed to create AuthService"),
+    ));
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(auth_service.clone()) // Provide AuthService instance to the app
+            .service(register)
+            .service(authenticate)
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await
 }

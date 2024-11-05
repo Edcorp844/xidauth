@@ -1,7 +1,7 @@
-use redis::{Commands, Connection, RedisError, RedisResult};
-use std::collections::HashMap;
-
 use super::db_error::DBError;
+use redis::{Commands, Connection, RedisError, RedisResult};
+use serde_json::json;
+use std::collections::HashMap;
 
 pub struct DataBase {
     connection: Connection,
@@ -12,7 +12,9 @@ impl DataBase {
     pub fn new(redis_url: &str) -> Result<Self, RedisError> {
         let client = redis::Client::open(redis_url)?;
         let connection = client.get_connection()?;
-        Ok(DataBase { connection })
+        let mut db = DataBase { connection };
+
+        Ok(db)
     }
 
     // Set a key-value pair in Redis.

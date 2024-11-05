@@ -1,3 +1,4 @@
+use bcrypt::{hash, verify, DEFAULT_COST};
 use crate::db::{database::DataBase, db_error::DBError};
 use redis::RedisError;
 use serde_json::json;
@@ -14,14 +15,30 @@ impl AuthService {
         Ok(AuthService { db })
     }
 
+    // Check if an email is already in use.
+    pub fn check_email(&mut self, email: &str) -> Result<bool, DBError> {
+        // Attempt to retrieve the user data associated with the email
+        match self.db.get_json_value(email) {
+            Ok(_) => Ok(true),   // If found, email is in use
+            Err(_) => Ok(false), // If not found, email is not in use
+        }
+    }
+
     // Register a new user in Redis with JSON data.
     pub fn register_user(
         &mut self,
         user_id: &str,
         user_info: &HashMap<&str, &str>,
     ) -> Result<(), RedisError> {
+        // Hash the password
+        let hashed_password = hash(user_info.get("password").unwrap(), DEFAULT_COST).unwrap();
+        
+        // Create a new HashMap with hashed password
+        let mut user_info_hashed = user_info.clone();
+        user_info_hashed.insert("password", &hashed_password);
+
         // Convert user_info HashMap to JSON
-        let json_data = json!(user_info).to_string();
+        let json_data = json!(user_info_hashed).to_string();
         self.db.set_json_value(user_id, &json_data)?;
         Ok(())
     }
@@ -29,13 +46,11 @@ impl AuthService {
     // Authenticate user by checking the stored password.
     pub fn authenticate_user(&mut self, user_id: &str, password: &str) -> Result<bool, DBError> {
         // Retrieve user data from Redis as JSON
-        let user_data: Option<HashMap<String, String>> = Some(self.db.get_json_value(user_id)?);
+        let user_data: HashMap<String, String> = self.db.get_json_value(user_id)?;
 
         // Check if user data exists
-        if let Some(user_info) = user_data {
-            if let Some(stored_password) = user_info.get("password") {
-                return Ok(stored_password == password); // Password matches
-            }
+        if let Some(stored_password) = user_data.get("password") {
+            return Ok(verify(password, stored_password).unwrap()); // Verify the password
         }
 
         Ok(false) // Authentication failed
@@ -83,6 +98,7 @@ impl AuthService {
         Ok(())
     }
 
+    // Get user information
     pub fn get_user_info(&mut self, user_id: &str) -> Result<HashMap<String, String>, DBError> {
         let user_info = self.db.get_json_value(user_id)?;
         Ok(user_info)

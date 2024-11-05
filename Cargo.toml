@@ -13,8 +13,9 @@ futures = "0.3.31"
 oxide-auth = "0.6.1"
 oxide-auth-actix = "0.3.0"
 oxide-auth-db = { version = "0.3.0", features = ["with-redis"] }
-#reqwest = "0.12.9"
 serde = "1.0.214"
 serde_json = "1.0.132"
 reqwest = { version = "0.12.9", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 redis = "0.27.5"
+uuid = { version = "1.11.0", features = ["v4"] }
+bcrypt = "0.15.1"
