@@ -16,6 +16,7 @@
     pkgs.wget
     pkgs.openssl
     pkgs.pkg-config
+    pkgs.python3
   ];
 
   # Sets environment variables in the workspace
@@ -35,9 +36,12 @@
       "tamasfe.even-better-toml"
       "serayuzgur.crates"
       "vadimcn.vscode-lldb"
+      "ms-python.python"
     ];
     workspace = {
       onCreate = {
+        install =
+          "python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt";
         # Open editors for the following files by default, if they exist:
         default.openFiles = [ "src/main.rs" ];
       };
