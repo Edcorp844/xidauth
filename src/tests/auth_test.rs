@@ -1,146 +1,115 @@
 #[cfg(test)]
 mod tests {
-    use crate::{auth::auth_service::AuthService, db::database::DataBase};
 
-    use std::collections::HashMap;
+    use uuid::Uuid;
+    use crate::auth::auth_service::AuthService;
+    use crate::database::database::Database;
+    use crate::database::database_error::DatabaseError;
+    use crate::database::utils::BlacklistedToken;
 
-    // Helper function to set up a test Redis connection
-    fn setup_test_redis() -> DataBase {
-        let redis_url = "redis://127.0.0.1:6379";
-        DataBase::new(redis_url).expect("Failed to connect to Redis")
+    // Helper function to set up AuthService with a mock database
+    fn setup_auth_service() -> AuthService {
+        let redis_url = "redis://127.0.0.1/"; // Mock Redis URL
+        let encryption_key: [u8; 32] = [0; 32]; // Mock encryption key
+
+        let database = Database::new(redis_url, &encryption_key).unwrap();
+        AuthService::new(database)
     }
 
     #[test]
-    fn test_register_user() {
-        let mut db = setup_test_redis();
-        let mut auth_service =
-            AuthService::new("redis://127.0.0.1/").expect("Failed to create AuthService");
+    fn test_register_user_success() {
+        let auth_service = setup_auth_service();
+        let email = "test@example.com".to_string();
+        let password = "securepassword".to_string();
 
-        let user_id = "user_1";
-        let mut user_info = HashMap::new();
-        user_info.insert("username", "testuser");
-        user_info.insert("password", "password123");
+        let result = auth_service.register_user(email.clone(), password.clone());
 
-        let result = auth_service.register_user(user_id, &user_info);
+        // Assert that the registration is successful
+        assert!(result.is_ok());
+        assert!(result.unwrap()); // User should be registered
+    }
+
+    #[test]
+    fn test_register_user_duplicate() {
+        let auth_service = setup_auth_service();
+        let email = "duplicate@example.com".to_string();
+        let password = "password".to_string();
+
+        // First registration attempt should succeed
+        auth_service
+            .register_user(email.clone(), password.clone())
+            .unwrap();
+
+        // Second attempt with the same email should return an error
+        let second_attempt = auth_service.register_user(email, password);
+
+        // Assert that the second attempt returns an error (DatabaseError::UserAlreadyExists)
+        assert!(second_attempt.is_err());
+        match second_attempt {
+            Err(DatabaseError::UserAlreadyExists) => {} // Test passes if error is UserAlreadyExists
+            _ => panic!("Expected UserAlreadyExists error"),
+        }
+    }
+
+    #[test]
+    fn test_login_user_success() {
+        let auth_service = setup_auth_service();
+        let email = "login@example.com".to_string();
+        let password = "password123".to_string();
+
+        // Register user first
+        auth_service
+            .register_user(email.clone(), password.clone())
+            .unwrap();
+
+        // Attempt to login with correct credentials
+        let result = auth_service.login_user(email, password);
+
+        // Assert that login is successful
+        assert!(result.is_ok());
+        assert!(result.unwrap()); // Login should succeed
+    }
+
+    #[test]
+    fn test_login_user_invalid_credentials() {
+        let auth_service = setup_auth_service();
+        let email = "invalid@example.com".to_string();
+        let password = "wrongpassword".to_string();
+
+        // Attempt to login with invalid credentials
+        let result = auth_service.login_user(email, password);
+
+        // Assert that the result is an error
+        assert!(result.is_err());
+
+        // Check that the error is the expected InvalidCredentials error
+        if let Err(DatabaseError::InvalidCredentials) = result {
+            // Test passes
+        } else {
+            panic!("Expected InvalidCredentials error");
+        }
+    }
+/* 
+    #[test]
+    fn test_blacklist_token() {
+        let auth_service = setup_auth_service();
+        let token = Uuid::new_v4().to_string();
+        let reason = "Just For test".to_string();
+
+        // Create a blacklisted token with expiration time
+        let user = BlacklistedToken {
+            token: token.clone(),
+            expires_at: chrono::Utc::now().timestamp() + 3600, // Expires in 1 hour
+            reason,
+        };
+
+        // Add the token to the blacklist
+        let result = auth_service.add_blacklisted_token(user);
         assert!(result.is_ok());
 
-        // Verify the user is registered in Redis
-        let json_data: Option<HashMap<String, String>> =
-            Some(db.get_json_value(user_id).expect("Failed to get user data"));
-        assert!(json_data.is_some());
-    }
-
-    #[test]
-    fn test_authenticate_user_success() {
-        let _db = setup_test_redis();
-        let mut auth_service =
-            AuthService::new("redis://127.0.0.1/").expect("Failed to create AuthService");
-
-        let user_id = "user_2";
-        let mut user_info = HashMap::new();
-        user_info.insert("username", "testuser2");
-        user_info.insert("password", "password123");
-
-        // Register the user first
-        auth_service
-            .register_user(user_id, &user_info)
-            .expect("Failed to register user");
-
-        // Authenticate the user
-        let is_authenticated = auth_service
-            .authenticate_user(user_id, "password123")
-            .expect("Authentication failed");
-        assert!(is_authenticated);
-    }
-
-    #[test]
-    fn test_authenticate_user_failure() {
-        let _db = setup_test_redis();
-        let mut auth_service =
-            AuthService::new("redis://127.0.0.1/").expect("Failed to create AuthService");
-
-        let user_id = "user_3";
-        let mut user_info = HashMap::new();
-        user_info.insert("username", "testuser3");
-        user_info.insert("password", "password123");
-
-        // Register the user first
-        auth_service
-            .register_user(user_id, &user_info)
-            .expect("Failed to register user");
-
-        // Attempt authentication with incorrect password
-        let is_authenticated = auth_service
-            .authenticate_user(user_id, "wrongpassword")
-            .expect("Authentication failed");
-        assert!(!is_authenticated);
-    }
-
-    #[test]
-    fn test_store_and_get_oauth_token() {
-        let  _db = setup_test_redis();
-        let mut auth_service =
-            AuthService::new("redis://127.0.0.1/").expect("Failed to create AuthService");
-
-        let user_id = "user_4";
-        let token = "sample_oauth_token";
-
-        // Store the token
-        auth_service
-            .store_oauth_token(user_id, token, 60)
-            .expect("Failed to store OAuth token");
-
-        // Retrieve the token
-        let retrieved_token = auth_service
-            .get_oauth_token(user_id)
-            .expect("Failed to get OAuth token");
-        assert_eq!(retrieved_token, Some(token.to_string()));
-    }
-
-    #[test]
-    fn test_set_and_validate_session() {
-        let  _db = setup_test_redis();
-        let mut auth_service =
-            AuthService::new("redis://127.0.0.1/").expect("Failed to create AuthService");
-
-        let session_id = "session_1";
-        let user_id = "user_5";
-
-        // Set the session
-        auth_service
-            .set_session(session_id, user_id, 60)
-            .expect("Failed to set session");
-
-        // Validate the session
-        let validated_user_id = auth_service
-            .validate_session(session_id)
-            .expect("Failed to validate session");
-        assert_eq!(validated_user_id, Some(user_id.to_string()));
-    }
-
-    #[test]
-    fn test_delete_session() {
-        let _db = setup_test_redis();
-        let mut auth_service =
-            AuthService::new("redis://127.0.0.1/").expect("Failed to create AuthService");
-
-        let session_id = "session_2";
-        let user_id = "user_6";
-
-        // Set the session
-        auth_service
-            .set_session(session_id, user_id, 60)
-            .expect("Failed to set session");
-
-        // Delete the session
-        auth_service
-            .delete_session(session_id)
-            .expect("Failed to delete session");
-
-        // Validate the session should return None
-        let validated_user_id = auth_service
-            .validate_session(session_id)
-            .expect("Failed to validate session");
-        assert_eq!(validated_user_id, None);
-    }
-}
+        // Check if the token is blacklisted
+        let check_blacklist = auth_service.is_token_blacklisted(&token);
+        assert!(check_blacklist.is_ok());
+        assert!(check_blacklist.unwrap()); // Token should be blacklisted
+    } */
+} 

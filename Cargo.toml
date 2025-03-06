@@ -17,5 +17,8 @@ serde = "1.0.214"
 serde_json = "1.0.132"
 reqwest = { version = "0.12.9", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 redis = "0.27.5"
-uuid = { version = "1.11.0", features = ["v4"] }
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
 bcrypt = "0.15.1"
+aes-gcm = "0.10.3"
+chrono = "0.4.40"
+thiserror = "2.0.12"
